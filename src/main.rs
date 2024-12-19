@@ -1,51 +1,11 @@
-use core::{
-	mqtt::{create_mqtt_client, MqttConfig},
-	Config,
-};
+use core::{mqtt::create_mqtt_client, Config};
+use plugins::{core::Plugin, heart_beat::HeartBeatPlugin, system_load::SystemLoadPlugin, user_idle::UserIdlePlugin};
 use env_logger::Env;
-use machine_uid;
-use plugins::{core::Plugin, heart_beat::HeartBeatPlugin, system_load::SystemLoadPlugin};
-use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
-use serde::Deserialize;
-use std::{fs::File, time::Duration};
-use sysinfo::System;
+use std::{fs::File, sync::Arc};
 use tokio::task;
-use user_idle::UserIdle;
 
 mod core;
 mod plugins;
-
-// async fn send_keep_alive(client: AsyncClient, topic: String) {
-// 	let mut interval = time::interval(Duration::from_secs(1));
-// 	loop {
-// 		interval.tick().await;
-// 		let payload = "keep alive";
-// 		if let Err(e) = client.publish(&topic, QoS::AtLeastOnce, false, payload).await {
-// 			eprintln!("Failed to send keep alive: {:?}", e);
-// 		}
-// 	}
-// }
-
-// async fn monitor_user_idle(client: AsyncClient, topic: String) {
-// 	let mut previous_idle_state = false;
-
-// 	loop {
-// 		let idle = UserIdle::get_time().unwrap();
-// 		let idle_time_secs = idle.as_seconds();
-// 		let current_idle_state = idle_time_secs >= 60; // User idle after 60 seconds
-// 		println!("Idle time: {} seconds", idle_time_secs);
-
-// 		if current_idle_state != previous_idle_state {
-// 			let state = if current_idle_state { "idle" } else { "active" };
-// 			if let Err(e) = client.publish(&topic, QoS::AtLeastOnce, false, state).await {
-// 				eprintln!("Failed to send idle state: {:?}", e);
-// 			}
-// 			previous_idle_state = current_idle_state;
-// 		}
-
-// 		tokio::time::sleep(Duration::from_secs(5)).await;
-// 	}
-// }
 
 #[tokio::main]
 async fn main() {
@@ -61,21 +21,40 @@ async fn main() {
 
 	log::info!("Connecting to MQTT...");
 	let (client, mut eventloop) = create_mqtt_client(&config.mqtt);
+	let mqtt_client = Arc::new(client);
 
 	let system_load_plugin = SystemLoadPlugin::new();
 	let heart_beat_plugin = HeartBeatPlugin::new();
+	let user_idle_plugin = UserIdlePlugin::new();
 
-	// let system = System::new_all();
 	let hardware_uuid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
 	let root_topic = format!("sys2mqtt/{}", hardware_uuid);
 	log::info!("Root topic: {}", root_topic);
 
+	log::info!("Starting plugin heartbeat... {}", heart_beat_plugin.is_enabled());
+	let client_clone = mqtt_client.clone();
+	let root_topic_clone = root_topic.clone();
 	task::spawn(async move {
 		if heart_beat_plugin.is_enabled() {
-			heart_beat_plugin.start(&client, config_path.to_string(), root_topic.to_owned()).await;
+			heart_beat_plugin.start(&client_clone, config_path.to_string(), root_topic_clone.to_owned()).await;
 		}
+	});
+
+	log::info!("Starting plugin system load... {}", system_load_plugin.is_enabled());
+	let client_clone = mqtt_client.clone();
+	let root_topic_clone = root_topic.clone();
+	task::spawn(async move {
 		if system_load_plugin.is_enabled() {
-			system_load_plugin.start(&client, config_path.to_string(), root_topic.to_owned()).await;
+			system_load_plugin.start(&client_clone, config_path.to_string(), root_topic_clone.to_owned()).await;
+		}
+	});
+
+	log::info!("Starting plugin user idle... {}", user_idle_plugin.is_enabled());
+	let client_clone = mqtt_client.clone();
+	let root_topic_clone = root_topic.clone();
+	task::spawn(async move {
+		if user_idle_plugin.is_enabled() {
+			user_idle_plugin.start(&client_clone, config_path.to_string(), root_topic_clone.to_owned()).await;
 		}
 	});
 
@@ -84,7 +63,7 @@ async fn main() {
 		match eventloop.poll().await {
 			Ok(_) => {}
 			Err(e) => {
-				eprintln!("MQTT connection error: {:?}", e);
+				log::error!("MQTT connection error: {:?}", e);
 				break;
 			}
 		}

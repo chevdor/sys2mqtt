@@ -1,7 +1,7 @@
 mqtt:
   host: "localhost"
   port: 1883
-  client_id: "rust_mqtt_client"
+  # client_id: "rust_mqtt_client"
 
 keep_alive:
   topic: "metrics/keepalive"

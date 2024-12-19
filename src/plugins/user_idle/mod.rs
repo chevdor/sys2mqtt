@@ -1,0 +1,83 @@
+use crate::plugins::core::Plugin;
+use async_trait::async_trait;
+use rumqttc::{AsyncClient, QoS};
+use tokio::time::Duration;
+use user_idle::UserIdle;
+
+pub(crate) struct UserIdlePlugin {
+	enabled: bool,
+	// config: Option<HashMap<String, String>>,
+	delay: u64,
+	timeout: u64,
+}
+
+impl UserIdlePlugin {
+	pub fn new() -> Self {
+		let enabled =
+			std::env::var("SYS2MQTT_USER_IDLE_ENABLED").unwrap_or_else(|_| "true".to_string()).parse().unwrap_or(true);
+		let delay = std::env::var("SYS2MQTT_USER_IDLE_DELAY").unwrap_or_else(|_| "30".to_string()).parse().unwrap_or(5);
+		let timeout =
+			std::env::var("SYS2MQTT_USER_IDLE_TIMEOUT").unwrap_or_else(|_| "60".to_string()).parse().unwrap_or(60);
+		// todo: load config from file
+		UserIdlePlugin { enabled, delay, timeout }
+	}
+}
+
+#[async_trait]
+impl Plugin for UserIdlePlugin {
+	fn name(&self) -> &str {
+		"user_idle"
+	}
+
+	fn is_enabled(&self) -> bool {
+		self.enabled
+	}
+
+	// fn config(&self) -> Option<HashMap<String, String>> {
+	// 	None
+	// }
+
+	async fn start(&self, client: &AsyncClient, _config_path: String, root_topic: String) {
+		log::debug!("Starting user idle plugin...");
+
+		if !self.is_enabled() {
+			log::warn!("Plugin {} is disabled.", self.name());
+			return;
+		}
+
+		let topic = format!("{}/{}", root_topic, self.name());
+		log::debug!("UserIdle topic: {}", topic);
+
+		let mut previous_idle_state: Option<bool> = None;
+		loop {
+			let idle = UserIdle::get_time().unwrap();
+			let idle_time_secs = idle.as_seconds();
+			let current_idle_state = idle_time_secs >= self.timeout;
+			log::debug!("Idle time: {} seconds", idle_time_secs);
+
+			match previous_idle_state {
+				Some(_) => {
+					let state = if current_idle_state { "idle" } else { "active" };
+
+					if current_idle_state != previous_idle_state.unwrap() {
+						if let Err(e) = client.publish(&topic, QoS::AtLeastOnce, false, state).await {
+							log::error!("Failed to send idle state: {:?}", e);
+						}
+					}
+
+					previous_idle_state = Some(current_idle_state);
+					// nothing to do
+				}
+				None => {
+					let state = if current_idle_state { "idle" } else { "active" };
+					if let Err(e) = client.publish(&topic, QoS::AtLeastOnce, false, state).await {
+						log::error!("Failed to send idle state: {:?}", e);
+					}
+					previous_idle_state = Some(current_idle_state);
+				}
+			}
+
+			tokio::time::sleep(Duration::from_secs(self.delay)).await;
+		}
+	}
+}

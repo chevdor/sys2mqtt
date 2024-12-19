@@ -7,7 +7,7 @@ use serde::Deserialize;
 pub(crate) struct MqttConfig {
 	host: String,
 	port: u16,
-	client_id: String,
+	// client_id: String,
 	username: Option<String>,
 }
 
