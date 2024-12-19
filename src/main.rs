@@ -2,8 +2,9 @@ use core::{
 	mqtt::{create_mqtt_client, MqttConfig},
 	Config,
 };
+use env_logger::Env;
 use machine_uid;
-use plugins::{core::Plugin, system_load::SystemLoadPlugin};
+use plugins::{core::Plugin, heart_beat::HeartBeatPlugin, system_load::SystemLoadPlugin};
 use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
 use serde::Deserialize;
 use std::{fs::File, time::Duration};
@@ -48,6 +49,9 @@ mod plugins;
 
 #[tokio::main]
 async fn main() {
+	env_logger::Builder::from_env(Env::default().default_filter_or("none")).init();
+	log::debug!("Starting sys2mqtt...");
+
 	// Load configuration from a YAML file
 	let config_path = "config.yaml";
 	let config: Config = {
@@ -55,21 +59,25 @@ async fn main() {
 		serde_yaml::from_reader(file).expect("Failed to parse config.yaml")
 	};
 
-	println!("connecting to MQTT...");
+	log::info!("Connecting to MQTT...");
 	let (client, mut eventloop) = create_mqtt_client(&config.mqtt);
 
 	let system_load_plugin = SystemLoadPlugin::new();
-	let system = System::new_all();
+	let heart_beat_plugin = HeartBeatPlugin::new();
+
+	// let system = System::new_all();
 	let hardware_uuid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
-
 	let root_topic = format!("sys2mqtt/{}", hardware_uuid);
-	println!("Root topic: {}", root_topic);
+	log::info!("Root topic: {}", root_topic);
 
-	if system_load_plugin.is_enabled() {
-		task::spawn(async move {
-			system_load_plugin.start(client, config_path.to_string(), root_topic).await;
-		});
-	}
+	task::spawn(async move {
+		if heart_beat_plugin.is_enabled() {
+			heart_beat_plugin.start(&client, config_path.to_string(), root_topic.to_owned()).await;
+		}
+		if system_load_plugin.is_enabled() {
+			system_load_plugin.start(&client, config_path.to_string(), root_topic.to_owned()).await;
+		}
+	});
 
 	// Keep the event loop running to process MQTT events
 	loop {

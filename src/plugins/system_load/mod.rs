@@ -19,13 +19,6 @@ impl SystemLoadPlugin {
 	}
 }
 
-#[derive(Serialize)]
-struct LoadPayload {
-	one_minute: f64,
-	five_minutes: f64,
-	fifteen_minutes: f64,
-}
-
 #[async_trait]
 impl Plugin for SystemLoadPlugin {
 	fn name(&self) -> &str {
@@ -40,13 +33,12 @@ impl Plugin for SystemLoadPlugin {
 		self.config.clone()
 	}
 
-	async fn start(&self, client: AsyncClient, config_path: String, root_topic: String) {
+	async fn start(&self, client: &AsyncClient, config_path: String, root_topic: String) {
 		if !self.is_enabled() {
 			eprintln!("Plugin {} is disabled.", self.name());
 			return;
 		}
 
-		// let mut previous_load: Option<LoadAvg> = None;
 
 		loop {
 			// Get the current load average
@@ -55,29 +47,12 @@ impl Plugin for SystemLoadPlugin {
 			let topic_5m = format!("{}/{}/5m", root_topic, self.name());
 			let topic_15m = format!("{}/{}/15m", root_topic, self.name());
 
-			println!("topics: {:?}/{:?}/{:?}", topic_1m, topic_5m, topic_15m);
-			println!("{:?}", load_avg);
-
-			// Compare the load averages manually
-			// if previous_load.is_none()
-			// 	|| previous_load.as_ref().unwrap().one != load_avg.one
-			// 	|| previous_load.as_ref().unwrap().five != load_avg.five
-			// 	|| previous_load.as_ref().unwrap().fifteen != load_avg.fifteen
-			// {
-			// let payload = format!("1m: {:.2}, 5m: {:.2}, 15m: {:.2}", load_avg.one, load_avg.five, load_avg.fifteen);
-
-			// let payload = json!({
-            //     "1m": load_avg.one,
-            //     "5m": load_avg.five,
-            //     "15m": load_avg.fifteen
-            // });
+			log::debug!("topics: {:?}/{:?}/{:?}", topic_1m, topic_5m, topic_15m);
+			log::debug!("{:?}", load_avg);
 
 			client.publish(&topic_1m, QoS::AtLeastOnce, false, load_avg.one.to_string()).await.unwrap();
 			client.publish(&topic_5m, QoS::AtLeastOnce, false, load_avg.five.to_string()).await.unwrap();
 			client.publish(&topic_15m, QoS::AtLeastOnce, false, load_avg.fifteen.to_string()).await.unwrap();
-
-			// previous_load = Some(load_avg);
-			// }
 
 			// Sleep for 5 seconds before checking the load again
 			sleep(Duration::from_secs(5)).await;
