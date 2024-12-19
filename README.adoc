@@ -1,0 +1,3 @@
+= sys2mqtt
+
+Allows sending system information to an MQTT broker.
