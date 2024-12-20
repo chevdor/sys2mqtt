@@ -4,15 +4,9 @@ use std::path::PathBuf;
 
 pub mod mqtt;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default)]
 pub(crate) struct Config {
 	pub mqtt: MqttConfig,
-}
-
-impl Default for Config {
-	fn default() -> Self {
-		Self { mqtt: MqttConfig::default() }
-	}
 }
 
 pub(crate) fn config_path() -> PathBuf {

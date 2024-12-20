@@ -1,3 +1,16 @@
 mqtt:
   host: "localhost"
   port: 1883
+
+heart_beat:
+  enabled: true
+  delay: 15
+
+user_idle:
+  enabled: true
+  delay: 5
+  timeout: 60
+
+system_load:
+  enabled: true
+  delay: 30

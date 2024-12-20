@@ -23,36 +23,40 @@ async fn main() {
 	log::info!("Connecting to MQTT...");
 	let (client, mut eventloop) = create_mqtt_client(&config.mqtt);
 	let mqtt_client = Arc::new(client);
+	log::info!("Connection to MQTT Broker OK");
 
 	let hardware_uuid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
 	let root_topic = format!("sys2mqtt/{}", hardware_uuid);
 	log::info!("Root topic: {}", root_topic);
 
-	let system_load_plugin = SystemLoadPlugin::new(config_path.clone(), root_topic.clone());
 	let heart_beat_plugin = HeartBeatPlugin::new(config_path.clone(), root_topic.clone());
 	let user_idle_plugin = UserIdlePlugin::new(config_path.clone(), root_topic.clone());
+	let system_load_plugin = SystemLoadPlugin::new(config_path.clone(), root_topic.clone());
 
-	log::info!("Starting plugin heartbeat... {}", heart_beat_plugin.is_enabled());
 	let client_clone = mqtt_client.clone();
 	task::spawn(async move {
 		if heart_beat_plugin.is_enabled() {
 			heart_beat_plugin.start(&client_clone).await;
+		} else {
+			log::warn!("{} plugin is disabled.", heart_beat_plugin.name());
 		}
 	});
 
-	log::info!("Starting plugin system load... {}", system_load_plugin.is_enabled());
 	let client_clone = mqtt_client.clone();
 	task::spawn(async move {
 		if system_load_plugin.is_enabled() {
 			system_load_plugin.start(&client_clone).await;
+		} else {
+			log::warn!("{} plugin is disabled.", system_load_plugin.name());
 		}
 	});
 
-	log::info!("Starting plugin user idle... {}", user_idle_plugin.is_enabled());
 	let client_clone = mqtt_client.clone();
 	task::spawn(async move {
 		if user_idle_plugin.is_enabled() {
 			user_idle_plugin.start(&client_clone).await;
+		} else {
+			log::warn!("{} plugin is disabled.", user_idle_plugin.name());
 		}
 	});
 
