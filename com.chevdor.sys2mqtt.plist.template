@@ -7,7 +7,7 @@
 
         <key>ProgramArguments</key>
         <array>
-                <string>/Users/${USER}/.cargo/bin/sys2mqtt</string>
+                <string>${BIN_TARGET}/sys2mqtt</string>
         </array>
 
         <key>RunAtLoad</key>

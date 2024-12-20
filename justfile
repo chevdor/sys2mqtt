@@ -53,6 +53,8 @@ lint_plist:
 reinstall: install_sys2mqtt_local lint_plist install_service reload
 
 gen_plist:
+    #!/usr/bin/env bash
+    BIN_TARGET=$HOME/.cargo/bin
     envsubst < com.chevdor.sys2mqtt.plist.template > com.chevdor.sys2mqtt.plist
 
 # Set a tag for the release
