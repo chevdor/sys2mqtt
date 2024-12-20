@@ -24,7 +24,15 @@ The rest of the documentation assumes you installed using `cargo` and the binary
 
 ### `install.sh` script
 
-TODO
+First let's run the installer:
+
+```sh
+curl -sSL https://raw.githubusercontent.com/chevdor/sys2mqtt/refs/heads/master/install.sh | sh
+```
+
+You will be prompted to allow local network access, without that, `sys2mqtt` will not be able to reach your MQTT broker *when running as an Agent* (it would work if you call the binary manually, but you then need to start the binary yourself every time you boot up your machine)
+
+![Local Network Access](resources/screenshots/local_network.png)
 
 ### Using cargo
 ```

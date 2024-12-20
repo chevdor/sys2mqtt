@@ -24,14 +24,16 @@ echo "Installed sys2mqtt to $BIN_TARGET"
 echo "Installing LaunchAgent com.chevdor.sys2mqtt.plist"
 curl -s -L -o com.chevdor.sys2mqtt.plist.template https://raw.githubusercontent.com/$org/$repo/master/com.chevdor.sys2mqtt.plist.template
 envsubst < com.chevdor.sys2mqtt.plist.template > ~/Library/LaunchAgents/com.chevdor.sys2mqtt.plist
+chmod 644 ~/Library/LaunchAgents/com.chevdor.sys2mqtt.plist
+plutil -lint ~/Library/LaunchAgents/com.chevdor.sys2mqtt.plist
 
 # In case this is a reinstall, we reload the service to ensure we run the latest version
 echo "Unloading the agent in case it was already running"
-launchctl unload -w com.chevdor.sys2mqtt.plist 2>/dev/null || true
+launchctl unload -w ~/Library/LaunchAgents/com.chevdor.sys2mqtt.plist 2>/dev/null || true
 killall sys2mqtt 2>/dev/null || true
 
 echo "Loading LaunchAgent anew"
-launchctl load -w com.chevdor.sys2mqtt.plist
+launchctl load -w ~/Library/LaunchAgents/com.chevdor.sys2mqtt.plist
 echo "Installed LaunchAgent com.chevdor.sys2mqtt.plist"
 
 # popd > /dev/null
