@@ -20,7 +20,6 @@ async fn main() {
 		serde_yaml::from_reader(file).expect("Failed to parse config.yaml")
 	};
 
-	log::info!("Connecting to MQTT...");
 	let (client, mut eventloop) = create_mqtt_client(&config.mqtt);
 	let mqtt_client = Arc::new(client);
 	log::info!("Connection to MQTT Broker OK");

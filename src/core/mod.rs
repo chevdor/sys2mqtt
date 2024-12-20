@@ -22,7 +22,7 @@ pub(crate) fn config_path() -> PathBuf {
 			let config = Config::default();
 			let default_config = serde_yaml::to_string(&config).unwrap();
 			if let Some(parent) = path.parent() {
-				std::fs::create_dir_all(parent).expect("Failed to create config directory");
+				std::fs::create_dir_all(parent).expect(format!("Failed to create config directory as {}", parent.display()).as_str());
 			}
 
 			std::fs::write(&path, default_config).expect("Failed to write default config");

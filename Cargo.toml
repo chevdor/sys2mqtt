@@ -1,9 +1,12 @@
 [package]
 name = "sys2mqtt"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "System monitoring and reporting to MQTT"
 license = "MIT"
+authors = ["Chevdor <chevdor@gmail.com>"]
+repository = "https://github.com/chevdor/sys2mqtt"
+rust-version = "1.83.0"
 
 [dependencies]
 env_logger = "0.11.5"

@@ -1,3 +1,4 @@
 /target
 .env*
 !.env-sample
+com.chevdor.sys2mqtt.plist
