@@ -34,10 +34,6 @@ impl Plugin for HeartBeatPlugin {
 		self.enabled
 	}
 
-	// fn config(&self) -> Option<HashMap<String, String>> {
-	// 	None
-	// }
-
 	async fn start(&self, client: &AsyncClient) {
 		if cfg!(debug_assertions) {
 			log::debug!("Starting heart beat plugin...");

@@ -4,8 +4,8 @@ mod plugins;
 use core::{config_path, mqtt::create_mqtt_client, Config};
 use env_logger::Env;
 use plugins::{core::Plugin, heart_beat::HeartBeatPlugin, system_load::SystemLoadPlugin, user_idle::UserIdlePlugin};
-use std::{fs::File, sync::Arc};
-use tokio::task;
+use std::{fs::File, sync::Arc, thread::sleep};
+use tokio::{task, time::Duration};
 
 #[tokio::main]
 async fn main() {
@@ -62,7 +62,8 @@ async fn main() {
 			Ok(_) => {}
 			Err(e) => {
 				log::error!("MQTT connection error: {:?}", e);
-				break;
+				sleep(Duration::from_secs(5));
+				continue;
 			}
 		}
 	}
