@@ -2,6 +2,8 @@
 name = "sys2mqtt"
 version = "0.1.0"
 edition = "2021"
+description = "System monitoring and reporting to MQTT"
+license = "MIT"
 
 [dependencies]
 env_logger = "0.11.5"
