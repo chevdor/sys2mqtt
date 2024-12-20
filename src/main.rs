@@ -1,21 +1,22 @@
-use core::{mqtt::create_mqtt_client, Config};
-use plugins::{core::Plugin, heart_beat::HeartBeatPlugin, system_load::SystemLoadPlugin, user_idle::UserIdlePlugin};
-use env_logger::Env;
-use std::{fs::File, sync::Arc};
-use tokio::task;
-
 mod core;
 mod plugins;
+
+use core::{config_path, mqtt::create_mqtt_client, Config};
+use env_logger::Env;
+use plugins::{core::Plugin, heart_beat::HeartBeatPlugin, system_load::SystemLoadPlugin, user_idle::UserIdlePlugin};
+use std::{fs::File, sync::Arc};
+use tokio::task;
 
 #[tokio::main]
 async fn main() {
 	env_logger::Builder::from_env(Env::default().default_filter_or("none")).init();
 	log::debug!("Starting sys2mqtt...");
 
-	// Load configuration from a YAML file
-	let config_path = "config.yaml";
+	let config_path = config_path();
+	log::info!("Loading configuration from: {:?}", config_path);
+
 	let config: Config = {
-		let file = File::open(config_path).expect("Failed to open config.yaml");
+		let file = File::open(config_path.clone()).expect("Failed to open config.yaml");
 		serde_yaml::from_reader(file).expect("Failed to parse config.yaml")
 	};
 
@@ -23,38 +24,35 @@ async fn main() {
 	let (client, mut eventloop) = create_mqtt_client(&config.mqtt);
 	let mqtt_client = Arc::new(client);
 
-	let system_load_plugin = SystemLoadPlugin::new();
-	let heart_beat_plugin = HeartBeatPlugin::new();
-	let user_idle_plugin = UserIdlePlugin::new();
-
 	let hardware_uuid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
 	let root_topic = format!("sys2mqtt/{}", hardware_uuid);
 	log::info!("Root topic: {}", root_topic);
 
+	let system_load_plugin = SystemLoadPlugin::new(config_path.clone(), root_topic.clone());
+	let heart_beat_plugin = HeartBeatPlugin::new(config_path.clone(), root_topic.clone());
+	let user_idle_plugin = UserIdlePlugin::new(config_path.clone(), root_topic.clone());
+
 	log::info!("Starting plugin heartbeat... {}", heart_beat_plugin.is_enabled());
 	let client_clone = mqtt_client.clone();
-	let root_topic_clone = root_topic.clone();
 	task::spawn(async move {
 		if heart_beat_plugin.is_enabled() {
-			heart_beat_plugin.start(&client_clone, config_path.to_string(), root_topic_clone.to_owned()).await;
+			heart_beat_plugin.start(&client_clone).await;
 		}
 	});
 
 	log::info!("Starting plugin system load... {}", system_load_plugin.is_enabled());
 	let client_clone = mqtt_client.clone();
-	let root_topic_clone = root_topic.clone();
 	task::spawn(async move {
 		if system_load_plugin.is_enabled() {
-			system_load_plugin.start(&client_clone, config_path.to_string(), root_topic_clone.to_owned()).await;
+			system_load_plugin.start(&client_clone).await;
 		}
 	});
 
 	log::info!("Starting plugin user idle... {}", user_idle_plugin.is_enabled());
 	let client_clone = mqtt_client.clone();
-	let root_topic_clone = root_topic.clone();
 	task::spawn(async move {
 		if user_idle_plugin.is_enabled() {
-			user_idle_plugin.start(&client_clone, config_path.to_string(), root_topic_clone.to_owned()).await;
+			user_idle_plugin.start(&client_clone).await;
 		}
 	});
 

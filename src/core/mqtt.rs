@@ -1,14 +1,20 @@
 use std::env;
 
 use rumqttc::{AsyncClient, EventLoop, MqttOptions};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct MqttConfig {
 	host: String,
 	port: u16,
 	// client_id: String,
 	username: Option<String>,
+}
+
+impl Default for MqttConfig {
+	fn default() -> Self {
+		Self { host: "localhost".to_string(), port: 1883, username: None }
+	}
 }
 
 pub(crate) fn get_mqtt_password() -> Option<String> {

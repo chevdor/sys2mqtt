@@ -1,17 +1,21 @@
+use std::path::PathBuf;
+
 use crate::plugins::core::Plugin;
 use async_trait::async_trait;
 use rumqttc::{AsyncClient, QoS};
 use sysinfo::System;
 use tokio::time::{sleep, Duration};
 
+#[allow(dead_code)]
 pub(crate) struct SystemLoadPlugin {
 	enabled: bool,
-	// config: Option<HashMap<String, String>>,
 	delay: u64,
+	config_path: PathBuf,
+	root_topic: String,
 }
 
 impl SystemLoadPlugin {
-	pub fn new() -> Self {
+	pub fn new(config_path: PathBuf, root_topic: String) -> Self {
 		let enabled = std::env::var("SYS2MQTT_SYSTEM_LOAD_ENABLED")
 			.unwrap_or_else(|_| "true".to_string())
 			.parse()
@@ -20,7 +24,7 @@ impl SystemLoadPlugin {
 			std::env::var("SYS2MQTT_SYSTEM_LOAD_DELAY").unwrap_or_else(|_| "5".to_string()).parse().unwrap_or(5);
 
 		// todo: load config from file
-		SystemLoadPlugin { enabled, delay }
+		SystemLoadPlugin { enabled, delay, config_path, root_topic }
 	}
 }
 
@@ -38,8 +42,11 @@ impl Plugin for SystemLoadPlugin {
 	// 	None
 	// }
 
-	async fn start(&self, client: &AsyncClient, _config_path: String, root_topic: String) {
-		log::debug!("Starting system load plugin...");
+	async fn start(&self, client: &AsyncClient) {
+		if cfg!(debug_assertions) {
+			log::debug!("Starting system load plugin...");
+		}
+
 		if !self.is_enabled() {
 			log::warn!("Plugin {} is disabled.", self.name());
 			return;
@@ -48,9 +55,9 @@ impl Plugin for SystemLoadPlugin {
 		loop {
 			// Get the current load average
 			let load_avg = System::load_average();
-			let topic_1m = format!("{}/{}/1m", root_topic, self.name());
-			let topic_5m = format!("{}/{}/5m", root_topic, self.name());
-			let topic_15m = format!("{}/{}/15m", root_topic, self.name());
+			let topic_1m = format!("{}/{}/1m", self.root_topic, self.name());
+			let topic_5m = format!("{}/{}/5m", self.root_topic, self.name());
+			let topic_15m = format!("{}/{}/15m", self.root_topic, self.name());
 
 			// log::debug!("topics: {:?}/{:?}/{:?}", topic_1m, topic_5m, topic_15m);
 			// log::debug!("{:?}", load_avg);

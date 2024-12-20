@@ -15,3 +15,4 @@ machine-uid = "0.5.3"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
+dirs = "5.0.1"

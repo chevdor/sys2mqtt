@@ -1,13 +1,3 @@
 mqtt:
   host: "localhost"
   port: 1883
-  # client_id: "rust_mqtt_client"
-
-keep_alive:
-  topic: "metrics/keepalive"
-
-load:
-  topic: "metrics/system_load"
-
-idle:
-  topic: "metrics/user_idle"
