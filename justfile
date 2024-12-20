@@ -1,3 +1,5 @@
+VERSION := `toml get Cargo.toml package.version | jq -r`
+
 # Install all for you
 install_sys2mqtt_cargo:
     cargo install sys2mqtt
@@ -52,3 +54,12 @@ reinstall: install_sys2mqtt_local lint_plist install_service reload
 
 gen_plist:
     envsubst < com.chevdor.sys2mqtt.plist.template > com.chevdor.sys2mqtt.plist
+
+# Set a tag for the release
+tag:
+    @git tag -a v{{VERSION}} -m "Release v{{VERSION}}" -f
+    @git tag
+
+# Push the tag
+tag_push:
+    @git push github v{{VERSION}}
