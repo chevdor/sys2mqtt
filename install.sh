@@ -13,10 +13,11 @@ LATEST_ZIP=$(curl -s https://api.github.com/repos/$org/$repo/releases/latest | j
 curl -s -L -o latest.zip $LATEST_ZIP
 unzip latest.zip
 
-BIN_TARGET=${BIN_TARGET:-/usr/local/bin}
+export BIN_TARGET=${BIN_TARGET:-/usr/local/bin}
 
 cp -f sys2mqtt $BIN_TARGET
 chmod +x $BIN_TARGET/sys2mqtt
+codesign --display --entitlements - $BIN_TARGET/sys2mqtt
 echo "Installed sys2mqtt to $BIN_TARGET"
 
 # Install the LaunchAgent

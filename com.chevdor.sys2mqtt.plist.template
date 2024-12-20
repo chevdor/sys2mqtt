@@ -14,9 +14,9 @@
         <true/>
 
         <key>StandardOutPath</key>
-        <string>/tmp/sys2mqtt.log</string>
+        <string>/Users/${USER}/Library/Logs/sys2mqtt/sys2mqtt.log</string>
         <key>StandardErrorPath</key>
-        <string>/tmp/sys2mqtt_debug.log</string>
+        <string>/Users/${USER}/Library/Logs/sys2mqtt/sys2mqtt_debug.log</string>
 
         <key>EnvironmentVariables</key>
         <dict>
