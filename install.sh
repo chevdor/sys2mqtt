@@ -6,7 +6,7 @@ org=chevdor
 repo=sys2mqtt
 
 TMP_DIR=$(mktemp -d)
-pushd $TMP_DIR
+pushd $TMP_DIR > /dev/null
 
 # Fetch the latest build
 LATEST_ZIP=$(curl -s https://api.github.com/repos/$org/$repo/releases/latest | jq -r .assets[0].browser_download_url)
@@ -36,4 +36,8 @@ echo "Loading LaunchAgent anew"
 launchctl load -w ~/Library/LaunchAgents/com.chevdor.sys2mqtt.plist
 echo "Installed LaunchAgent com.chevdor.sys2mqtt.plist"
 
-# popd > /dev/null
+echo "sys2mqtt is now installed and running"
+echo "You should check the logs with:"
+echo "  tail -f ~/Library/Logs/sys2mqtt/sys2mqtt*.log"
+
+popd > /dev/null
